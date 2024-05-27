@@ -182,6 +182,7 @@ in {
           inherit (config.sdImage) compressImage;
 
           buildCommand = ''
+            echo ${toString storePaths}
             mkdir -p $out/nix-support $out/sd-image
             export img=$out/sd-image/${config.sdImage.imageName}
 
