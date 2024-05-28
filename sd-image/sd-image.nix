@@ -182,8 +182,6 @@ in {
           inherit (config.sdImage) compressImage;
 
           buildCommand = ''
-            echo "BOLT"
-            echo ${toString config.system.build.toplevel}
             mkdir -p $out/nix-support $out/sd-image
             export img=$out/sd-image/${config.sdImage.imageName}
 
@@ -205,7 +203,16 @@ in {
             firmwareSizeBlocks=$((${
               toString config.sdImage.firmwareSize
             } * 1024 * 1024 / 512))
-            imageSize=$((rootSizeBlocks * 512 + firmwareSizeBlocks * 512 + gap * 1024 * 1024))
+
+            # Count how many bytes there is in the storePaths closure that's
+            # going to get written.
+            closureBytes=0
+            for path in ${toString config.sdImage.storePaths}; do
+              pathSize=$(nix path-info --json $path | jq '.[0].narSize')
+              closureBytes=$((closureBytes + pathSize))
+            done
+
+            imageSize=$((rootSizeBlocks * 512 + firmwareSizeBlocks * 512 + closureBytes + gap * 1024 * 1024))
             truncate -s $imageSize $img
 
             # type=b is 'W95 FAT32', type=83 is 'Linux'.
